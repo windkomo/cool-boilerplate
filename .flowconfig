@@ -1,0 +1,14 @@
+[ignore]
+.*/node_modules/fbjs/.*
+.*/node_modules/styled-components/.*
+
+[libs]
+
+[options]
+esproposal.decorators=ignore
+esproposal.class_static_fields=enable
+esproposal.class_instance_fields=enable
+unsafe.enable_getters_and_setters=true
+module.name_mapper='^~\/\(.*\)$' -> '<PROJECT_ROOT>/src/\1'
+module.name_mapper='^ROOT\/\(.*\)$' -> '<PROJECT_ROOT>/\1'
+module.system=haste
