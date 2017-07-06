@@ -9,12 +9,7 @@ import { match, RouterContext } from 'react-router';
 import { renderToString } from 'react-dom/server';
 import { StyleSheetManager, ServerStyleSheet } from 'styled-components';
 import Helmet from 'react-helmet';
-import {
-    ApolloClient,
-    createNetworkInterface,
-    ApolloProvider,
-    renderToStringWithData,
-} from 'react-apollo';
+import { ApolloClient, createNetworkInterface, ApolloProvider, renderToStringWithData } from 'react-apollo';
 // Polyfill for apollo
 /*eslint-disable no-unused-vars*/
 import fetch from 'isomorphic-fetch';
@@ -30,7 +25,7 @@ const APP_ROOT = path.resolve(__dirname, '..');
 app.use(
     cors({
         origin: config.urls.origin,
-        credentials: true,
+        credentials: true
     })
 );
 
@@ -51,68 +46,61 @@ app.use(morgan('tiny'));
 useStaticRendering(true);
 
 app.get('*', (req, res) => {
-    match(
-        { routes: routes, location: req.url },
-        (err, redirect, renderProps) => {
-            if (err) {
-                console.log('Error', err);
-                res.status(500).send(err);
-            }
-            else if (redirect) {
-                res.redirect(302, redirect.pathname + redirect.search);
-            }
-            else if (renderProps) {
-                const client = new ApolloClient({
-                    networkInterface: createNetworkInterface({
-                        uri: 'http://localhost:4001/graphql',
-                    }),
-                    ssrMode: true,
-                    opts: {
-                        credentials: 'same-origin',
-                        headers: req.headers,
-                    },
-                });
-
-                const sheet = new ServerStyleSheet();
-                const App = (
-                    <StyleSheetManager sheet={ sheet.instance }>
-                        <ApolloProvider client={ client }>
-
-                            <RouterContext { ...renderProps } />
-
-                        </ApolloProvider>
-                    </StyleSheetManager>
-                );
-
-                renderToStringWithData(App)
-                    .then(content => {
-                        const css = sheet.getStyleTags();
-                        const initialState = {
-                            apollo: client.getInitialState(),
-                        };
-                        const head = Helmet.rewind();
-
-                        res.send(
-                            `<!doctype html>
-                                ${renderToString(
-                                    <Html
-                                        css={ css }
-                                        content={ content }
-                                        base={ head.base.toComponent() }
-                                        meta={ head.meta.toComponent() }
-                                        title={ head.title.toComponent() }
-                                        apolloState={ initialState }
-                                    />
-                                )}`
-                        );
-                    })
-                    .catch(console.log);
-            }
-            else {
-                res.status(404).send('Not found');
-            }
+    match({ routes: routes, location: req.url }, async (err, redirect, renderProps) => {
+        if (err) {
+            console.log('Error', err);
+            res.status(500).send(err);
         }
-    );
+        else if (redirect) {
+            res.redirect(302, redirect.pathname + redirect.search);
+        }
+        else if (renderProps) {
+            const client = new ApolloClient({
+                networkInterface: createNetworkInterface({
+                    uri: 'http://localhost:4001/graphql'
+                }),
+                ssrMode: true,
+                opts: {
+                    credentials: 'same-origin',
+                    headers: req.headers
+                }
+            });
+
+            const sheet = new ServerStyleSheet();
+            const App = (
+                <StyleSheetManager sheet={ sheet.instance }>
+                    <ApolloProvider client={ client }>
+
+                        <RouterContext { ...renderProps } />
+
+                    </ApolloProvider>
+                </StyleSheetManager>
+            );
+
+            const content = await renderToStringWithData(App);
+            const css = sheet.getStyleTags();
+            const initialState = {
+                apollo: client.getInitialState()
+            };
+            const head = Helmet.rewind();
+
+            res.send(
+                `<!doctype html>${renderToString(
+                    <Html
+                        css={ css }
+                        content={ content }
+                        base={ head.base.toComponent() }
+                        meta={ head.meta.toComponent() }
+                        title={ head.title.toComponent() }
+                        apolloState={ initialState }
+                    />
+                )}`
+            );
+        }
+        else {
+            res.status(404).send('Not found');
+        }
+    });
 });
 
 const server = app.listen(process.env.PORT || 4002, function() {
